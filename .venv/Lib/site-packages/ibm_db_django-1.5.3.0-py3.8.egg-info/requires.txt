@@ -1,0 +1,4 @@
+ibm_db>=3.0.1
+django>=4.2
+six
+regex
