@@ -1,68 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>MRN Form</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MRN Form</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4">
 
-    <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
-        <h2 class="text-2xl font-bold text-center mb-6">🔍 Search MRN</h2>
+  <div class="w-full sm:max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-700">
+    <h2 class="text-2xl sm:text-3xl font-bold text-center mb-6">🔍 MRN - Multimedia Attachment</h2>
 
-        <!-- Form -->
-        <form method="post" enctype="multipart/form-data" class="space-y-4">
-            {% csrf_token %}
-            <div>
-                <label for="mrn" class="block text-sm font-medium mb-1">MRN Number</label>
-                <input type="text" name="mrn" id="mrn" placeholder="Enter MRN"
-                       class="w-full px-4 py-2 rounded-xl bg-gray-700 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            </div>
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label for="mrn" class="block text-sm font-medium mb-1">MRN Number</label>
+        <input type="text" name="mrn" id="mrn" placeholder="Enter MRN"
+          class="w-full px-4 py-2 rounded-xl bg-gray-700 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
 
-            <div>
-                <label for="document" class="block text-sm font-medium mb-1">Upload Document</label>
-                <input type="file" name="document" id="document"
-                       class="w-full  px-4 py-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            </div>
-            
-            <button type="submit"
-                    class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-semibold transition duration-200 ease-in-out transform hover:scale-105">
-                Search & Upload
-            </button>
-        </form>
+      <div>
+        <label for="description" class="block text-sm font-medium mb-1">Description</label>
+        <input type="text" name="description" id="description" placeholder="Enter description (optional)"
+          class="w-full px-4 py-2 rounded-xl bg-gray-700 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+      </div>
 
-        <!-- Result -->
-        <div class="mt-6">
-            {% if legal_name %}
-                <div class="p-4 bg-green-700 rounded-xl shadow-md text-center animate-fade-in">
-                    <p class="text-lg font-semibold"> Name:</p>
-                    <p class="text-xl font-bold">{{ legal_name }}</p>
-                </div>
-            {% elif legal_name is not None %}
-                <div class="p-4 bg-red-700 rounded-xl shadow-md text-center animate-fade-in">
-                    <p class="text-lg font-semibold">❌ No record found for this MRN</p>
-                </div>
-            {% endif %}
+      <div>
+        <label for="document" class="block text-sm font-medium mb-1">Upload Document</label>
+        <input type="file" name="document" id="document"
+          class="w-full px-4 py-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-gray-700 text-white">
+      </div>
 
-            {% if document_url %}
-                <div class="mt-4 p-3 bg-blue-700 rounded-xl text-center">
-                    <p class="font-semibold">Document uploaded successfully:</p>
-                    <a href="{{ document_url }}" target="_blank" class="underline text-white">View Document</a>
-                </div>
-            {% endif %}
-        </div>
-    </div>
+      <button type="submit"
+        class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-semibold transition duration-200 ease-in-out transform hover:scale-105">
+        Upload
+      </button>
+    </form>
 
-    <!-- Small animation -->
-    <style>
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fade-in 0.6s ease-in-out;
-        }
-    </style>
+    <div id="mrnDetails" class="mt-6"></div>
 
+    {% if document_url %}
+      <div class="mt-4 p-3 bg-blue-700 rounded-xl text-center animate-fade-in">
+        <p class="font-semibold">✅ Document uploaded successfully!</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fade-in 0.6s ease-in-out; }
+  </style>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+      const mrnInput = document.getElementById("mrn");
+      const mrnDetails = document.getElementById("mrnDetails");
+
+      mrnInput.addEventListener("blur", function () {
+          const mrnValue = this.value.trim();
+          if (!mrnValue) return;
+
+          mrnDetails.innerHTML = `
+              <div class="p-4 bg-gray-700 rounded-xl text-center animate-fade-in">
+                  <p class="text-sm font-semibold">⏳ Fetching details...</p>
+              </div>
+          `;
+
+          fetch(`/?mrn=${encodeURIComponent(mrnValue)}`, {
+              headers: { "X-Requested-With": "XMLHttpRequest" }
+          })
+          .then(res => res.json())
+          .then(data => {
+              let html = "";
+              if (data.legal_name) {
+                  html += `
+                      <div class="p-4 bg-green-700 rounded-xl text-center animate-fade-in mb-4">
+                          <p class="text-lg font-semibold">Name:</p>
+                          <p class="text-xl font-bold">${data.legal_name}</p>
+                      </div>`;
+              } else {
+                  html += `
+                      <div class="p-4 bg-red-700 rounded-xl text-center animate-fade-in mb-4">
+                          <p class="font-semibold">❌ No record found</p>
+                      </div>`;
+              }
+
+              if (data.files && data.files.length > 0) {
+                  html += `
+                      <div class="bg-gray-700 p-4 rounded-xl">
+                          <h3 class="text-lg font-bold mb-3">📂 Uploaded Files:</h3>
+                          <ul class="space-y-2">
+                              ${data.files.map(f => `
+                                  <li class="flex justify-between items-center bg-gray-800 px-3 py-2 rounded-lg">
+                                      <span class="truncate w-1/2">${f.name}</span>
+                                      <div class="flex gap-3">
+                                          <a href="${f.url}" download class="text-indigo-400 hover:text-indigo-300 text-sm font-semibold underline">Download</a>
+                                      </div>
+                                  </li>
+                              `).join("")}
+                          </ul>
+                      </div>`;
+              } else {
+                  html += `
+                      <div class="p-4 bg-gray-700 rounded-xl text-center animate-fade-in">
+                          <p class="text-sm font-semibold">📁 No uploaded files found for this MRN</p>
+                      </div>`;
+              }
+
+              mrnDetails.innerHTML = html;
+          })
+          .catch(err => {
+              console.error(err);
+              mrnDetails.innerHTML = `
+                  <div class="p-4 bg-red-700 rounded-xl text-center animate-fade-in">
+                      <p class="text-sm font-semibold">⚠️ Error fetching MRN details</p>
+                  </div>`;
+          });
+      });
+  });
+  </script>
 </body>
 </html>
